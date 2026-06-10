@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive_flutter/adapters.dart';
 
 class CardDetails extends StatelessWidget {
+  final dynamic cardKey;
   final Map cardData;
 
-  const CardDetails({super.key, required this.cardData});
+  const CardDetails({super.key, required this.cardKey, required this.cardData});
 
   static const _imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
 
@@ -25,6 +27,13 @@ class CardDetails extends StatelessWidget {
       appBar: AppBar(
         centerTitle: true,
         title: Text(name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'حذف الكارت',
+            onPressed: () => _deleteCard(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
@@ -350,6 +359,38 @@ class CardDetails extends StatelessWidget {
         builder: (context) => _FullScreenImage(file: file, fileName: fileName),
       ),
     );
+  }
+
+  Future<void> _deleteCard(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف الكارت'),
+        content: const Text('هل أنت متأكد أنك تريد حذف هذا الكارت؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final box = Hive.box('Cards');
+    await box.delete(cardKey);
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف الكارت')),
+      );
+    }
   }
 }
 

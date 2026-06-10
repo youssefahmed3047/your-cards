@@ -62,6 +62,7 @@ class Home extends StatelessWidget {
                 );
               }
 
+              final cardKey = box.keyAt(index);
               final card = box.getAt(index) as Map;
               final name = card['name'] ?? 'بدون اسم';
 
@@ -71,7 +72,10 @@ class Home extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CardDetails(cardData: Map.from(card)),
+                      builder: (context) => CardDetails(
+                        cardKey: cardKey,
+                        cardData: Map.from(card),
+                      ),
                     ),
                   ),
                   child: Container(
