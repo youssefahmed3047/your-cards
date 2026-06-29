@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:krotak/custom_textfeild.dart';
@@ -27,11 +28,50 @@ class _AddCardState extends State<AddCard> {
   static const int maxFiles = 5;
   static const _imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
 
+  InterstitialAd? _interstitialAd;
+  bool _isAdLoaded = false;
+
   @override
   void initState() {
     super.initState();
     keyControllers.add(TextEditingController());
     valueControllers.add(TextEditingController());
+    _loadInterstitialAd();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-3606978056308381/9865056342',
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _isAdLoaded = true;
+
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isAdLoaded = false;
+              if (mounted) {
+                Navigator.pop(context);
+              }
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isAdLoaded = false;
+              if (mounted) {
+                Navigator.pop(context);
+              }
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          _isAdLoaded = false;
+        },
+      ),
+    );
   }
 
   bool _isImage(String fileName) {
@@ -235,13 +275,19 @@ class _AddCardState extends State<AddCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم حفظ الكارت بنجاح ✓')),
       );
-      Navigator.pop(context);
+
+      if (_isAdLoaded && _interstitialAd != null) {
+        _interstitialAd!.show();
+      } else {
+        Navigator.pop(context);
+      }
     }
   }
 
   @override
   void dispose() {
     nameController.dispose();
+    _interstitialAd?.dispose();
 
     for (final controller in keyControllers) {
       controller.dispose();
